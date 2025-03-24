@@ -1,8 +1,7 @@
 package com.cop.handlers;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
-import com.cop.Object_;
+import com.cop.objects.Object_;
 import com.dongbat.jbump.*;
 
 public class GravityHandler {
@@ -29,7 +28,7 @@ public class GravityHandler {
         // Move and handle collisions
         Response.Result result = world.move(item, futureX, futureY, collisionFilter);
 
-        for (int i = 0 ; i < result.projectedCollisions.size(); i++) {
+        for (int i = 0; i < result.projectedCollisions.size(); i++) {
             Collision collision = result.projectedCollisions.get(i);
             handleCollisions(collision, velocity);
         }

@@ -2,66 +2,102 @@ package com.cop;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.dongbat.jbump.Item;
+import com.cop.objects.Ball;
+import com.cop.objects.Object_;
+import com.cop.objects.ScreenObject_;
 import com.dongbat.jbump.World;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.cop.GameConstants.viewport;
+import static com.cop.GameConstants.world;
+
 public class ConceptOfPhysicsMain extends ApplicationAdapter {
-	static World<Object_> world;
-	FitViewport viewport;
-	ShapeRenderer shapeRenderer;
-	SpriteBatch spriteBatch;
-	Ball ball;
+    ShapeRenderer shapeRenderer;
+    SpriteBatch spriteBatch;
+    List<Object_> objects = new ArrayList<>();
 
-	@Override
-	public void create() {
-		world = new World<>();
-		spriteBatch = new SpriteBatch();
-		shapeRenderer = new ShapeRenderer();
-		viewport = new FitViewport(ScreenUtils.getFrameBufferTexture().getRegionWidth(), ScreenUtils.getFrameBufferTexture().getRegionHeight());
-		ball = new Ball(250,250,20f, 0.10f, world, new Vector2(2f, -0.10f));
-		addScreenEdges(world, ScreenUtils.getFrameBufferTexture().getRegionWidth(), ScreenUtils.getFrameBufferTexture().getRegionHeight());
-	}
+    @Override
+    public void create() {
+        world = new World<>();
+        spriteBatch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
+        viewport = new FitViewport(ScreenUtils.getFrameBufferTexture().getRegionWidth(), ScreenUtils.getFrameBufferTexture().getRegionHeight());
+        addScreenEdges(ScreenUtils.getFrameBufferTexture().getRegionWidth(), ScreenUtils.getFrameBufferTexture().getRegionHeight());
 
-	@Override
-	public void render() {
-		ScreenUtils.clear(0.12f,0.54f,0.86f,1f);
-		viewport.apply();
-		ball.update(Gdx.graphics.getDeltaTime());
-		spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
+        Ball ball = new Ball(250, 250, 20f, 0.10f, world, new Vector2(2f, -0.10f));
+        objects.add(ball);
+    }
 
-		spriteBatch.begin();
-		ball.render(shapeRenderer,spriteBatch);
-		spriteBatch.end();
-	}
+    @Override
+    public void render() {
+        ScreenUtils.clear(0f, 0f, 0f, 1f);
+        //ScreenUtils.clear(0.12f, 0.54f, 0.86f, 1f);
+        viewport.apply();
+        spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
+        shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
 
-	@Override
-	public void resize(int width, int height) {
-		viewport.update(width,height,true);
-		ball.onResize(width,height);
-		//ScreenObject_.refreshEdges();
-		addScreenEdges(world, width,height);
-	}
+        objects.forEach(obj -> obj.update(Gdx.graphics.getDeltaTime()));
 
-	@Override
-	public void resume() {
+        spriteBatch.begin();
+        objects.forEach(obj -> obj.render(shapeRenderer, spriteBatch));
 
-	}
+        spriteBatch.end();
 
-	public static void addScreenEdges(World<Object_> world, int screenWidth, int screenHeight) {
-		world.add(new Item<>(ScreenObject_.TOP_EDGE), 0, screenHeight, screenWidth, 1);
-		world.add(new Item<>(ScreenObject_.BOTTOM_EDGE), 0, -1, screenWidth, 1);
-		world.add(new Item<>(ScreenObject_.LEFT_EDGE), -1, 0, 1, screenHeight);
-		world.add(new Item<>(ScreenObject_.RIGHT_EDGE), screenWidth, 0, 1, screenHeight);
-	}
+        //Screen Collisions:
+        float screenWidth = viewport.getScreenWidth();
+        float screenHeight = viewport.getScreenHeight();
 
-	@Override
-	public void dispose() {
-		spriteBatch.dispose();
-		shapeRenderer.dispose();
-	}
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.WHITE);
+        shapeRenderer.rect(0, screenHeight - 1, screenWidth, 1); // Top edge
+        shapeRenderer.rect(0, 0, screenWidth, 1); // Bottom edge
+        shapeRenderer.rect(0, 0, 1, screenHeight); // Left edge
+        shapeRenderer.rect(screenWidth - 1, 0, 1, screenHeight); // Right edge
+        shapeRenderer.end();
+    }
+
+    @Override
+    public void resize(int screenWidth, int screenHeight) {
+        viewport.update(screenWidth, screenHeight,true);
+        viewport.setWorldSize(screenWidth,screenHeight);
+        objects.forEach(obj -> obj.onResize(screenWidth, screenHeight));
+        updateScreenEdges(screenWidth,screenHeight);
+
+        //ScreenObject_.refreshEdges();
+    }
+
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void dispose() {
+        spriteBatch.dispose();
+        shapeRenderer.dispose();
+        objects.forEach(Object_::dispose);
+    }
+
+
+    private void addScreenEdges(int screenWidth, int screenHeight) {
+        world.add(ScreenObject_.TOP_EDGE.ITEM, 0, screenHeight, screenWidth, 1);
+        world.add(ScreenObject_.BOTTOM_EDGE.ITEM, 0, -1, screenWidth, 1);
+        world.add(ScreenObject_.LEFT_EDGE.ITEM, -1, 0, 1, screenHeight);
+        world.add(ScreenObject_.RIGHT_EDGE.ITEM, screenWidth, 0, 1, screenHeight);
+    }
+    public static void updateScreenEdges(int screenWidth, int screenHeight) {
+        world.update(ScreenObject_.TOP_EDGE.ITEM, 0, screenHeight, screenWidth, 1);
+        world.update(ScreenObject_.BOTTOM_EDGE.ITEM, 0, -1, screenWidth, 1);
+        world.update(ScreenObject_.LEFT_EDGE.ITEM, -1, 0, 1, screenHeight);
+        world.update(ScreenObject_.RIGHT_EDGE.ITEM, screenWidth, 0, 1, screenHeight);
+    }
 }
