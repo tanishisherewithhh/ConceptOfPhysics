@@ -61,7 +61,9 @@ public class ParametersVisUI extends ApplicationAdapter{
         options.addItem(new MenuItem("Add Ball", new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                main.objects.add(new Ball(250, 250, 20f, 0.1000f, world, new Vector2(2f, -0.1000f)));
+                Vector2 random = Vector2.Zero.setToRandomDirection();
+                random.scl(5);
+                main.objects.add(new Ball(GameConstants.viewport.getWorldWidth()/2, GameConstants.viewport.getWorldHeight()/2, 20f, world, random));
             }
         }));
         options.addItem(new MenuItem("Remove last Ball", new ChangeListener() {
@@ -69,7 +71,7 @@ public class ParametersVisUI extends ApplicationAdapter{
             public void changed(ChangeEvent event, Actor actor) {
                 if(!main.objects.isEmpty()) {
                     Object_ obj = main.objects.removeLast();
-                    world.remove(obj.item);
+                    world.destroyBody(obj.getBody());
                 }
             }
         }));
@@ -100,9 +102,10 @@ public class ParametersVisUI extends ApplicationAdapter{
         stage.dispose();
     }
 
-    static class ParameterWindow extends VisWindow{
+    public static class ParameterWindow extends VisWindow{
         public VisSlider gravity = new VisSlider(0, 10, 0.01f, false);
-        public VisSlider damping = new VisSlider(0, 1, 0.001f, false);
+        public VisSlider collisionDamping = new VisSlider(0, 1, 0.001f, false);
+        public VisSlider airFriction = new VisSlider(0, 0.5f, 0.01f, false);
         public VisSlider radius = new VisSlider(0, 10, 0.5f, false);
         public Color color;
 
@@ -116,32 +119,47 @@ public class ParametersVisUI extends ApplicationAdapter{
             closeOnEscape();
 
             gravity.setValue(0.10f);
-            damping.setValue(0.8f);
+            collisionDamping.setValue(0.8f);
+            airFriction.setValue(0f);
             radius.setValue(2f);
 
             VisLabel gravityValueLabel = new VisLabel("" + gravity.getValue());
-            gravityValueLabel.setAlignment(Align.right); // Align text to the right
-            gravityValueLabel.setWidth(50f); // Set fixed width for the label
-            gravityValueLabel.setEllipsis(false);
             gravity.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    String s = String.format("%.1f",gravity.getValue());
+                    world.setGravity(new Vector2(0, -gravity.getValue()));
+                    String s = String.format("%.2f",gravity.getValue());
                     gravityValueLabel.setText(s);
                 }
             });
+            gravityValueLabel.setAlignment(Align.left); // Align text to the right
+            gravityValueLabel.setWidth(50f); // Set fixed width for the label
+            gravityValueLabel.setEllipsis(false);
 
-            VisLabel dampingValueLabel = new VisLabel("" + damping.getValue());
-            damping.addListener(new ChangeListener() {
+            VisLabel dampingValueLabel = new VisLabel("" + collisionDamping.getValue());
+            collisionDamping.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    String s = String.format("%.1f",damping.getValue());
+                    String s = String.format("%.3f",collisionDamping.getValue());
                     dampingValueLabel.setText(s);
                 }
             });
-            dampingValueLabel.setAlignment(Align.right);
+            dampingValueLabel.setAlignment(Align.left);
             dampingValueLabel.setWidth(50f);
             dampingValueLabel.setEllipsis(false);
+
+
+            VisLabel airFrictionValueLabel = new VisLabel("" + airFriction.getValue());
+            airFriction.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    String s = String.format("%.2f",airFriction.getValue());
+                    airFrictionValueLabel.setText(s);
+                }
+            });
+            airFrictionValueLabel.setAlignment(Align.left);
+            airFrictionValueLabel.setWidth(50f);
+            airFrictionValueLabel.setEllipsis(false);
 
             VisLabel radiusValueLabel = new VisLabel("" + radius.getValue());
             radius.addListener(new ChangeListener() {
@@ -151,7 +169,7 @@ public class ParametersVisUI extends ApplicationAdapter{
                     radiusValueLabel.setText(s);
                 }
             });
-            radiusValueLabel.setAlignment(Align.right);
+            radiusValueLabel.setAlignment(Align.left);
             radiusValueLabel.setWidth(50f);
             radiusValueLabel.setEllipsis(false);
 
@@ -164,10 +182,16 @@ public class ParametersVisUI extends ApplicationAdapter{
             sliderTable.add(gravityRow).row();
 
             VisTable dampingRow = new VisTable(true);
-            dampingRow.add(new VisLabel("Damping")).padRight(10f);
-            dampingRow.add(damping).padRight(10f);
+            dampingRow.add(new VisLabel("Collision Damping")).padRight(10f);
+            dampingRow.add(collisionDamping).padRight(10f);
             dampingRow.add(dampingValueLabel).width(50f);
             sliderTable.add(dampingRow).row();
+
+            VisTable airFrictionRow = new VisTable(true);
+            airFrictionRow.add(new VisLabel("Air Friction")).padRight(10f);
+            airFrictionRow.add(airFriction).padRight(10f);
+            airFrictionRow.add(airFrictionValueLabel).width(50f);
+            sliderTable.add(airFrictionRow).row();
 
             VisTable radiusRow = new VisTable(true);
             radiusRow.add(new VisLabel("Radius")).padRight(10f);

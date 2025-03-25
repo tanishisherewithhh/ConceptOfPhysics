@@ -4,38 +4,76 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.*;
 import com.cop.GameConstants;
-import com.cop.handlers.GravityHandler;
-import com.dongbat.jbump.CollisionFilter;
-import com.dongbat.jbump.Item;
-import com.dongbat.jbump.Response;
-import com.dongbat.jbump.World;
 
 public class Ball extends Object_ {
     public static boolean showVelocityArrow = false;
+    /*
     private final Circle circle;
     private final Vector2 velocity = new Vector2();
-    private final CollisionFilter collisionFilter = (item, other) -> Response.bounce;
+    private final CollisionFilter collisionFilter = (item, other) -> {
+        // Ensure both objects are circular
+        if (item.userData instanceof Ball && other.userData instanceof Ball) {
+            Ball ball1 = (Ball) item.userData;
+            Ball ball2 = (Ball) other.userData;
+
+            // Positions of the two balls
+            Vector2 pos1 = new Vector2(ball1.getX() + ball1.circle.radius, ball1.getY());
+            Vector2 pos2 = new Vector2(ball2.getX(), ball2.getY());
+
+            // Radii of the balls
+            float radius1 = ball1.circle.radius;
+            float radius2 = ball2.circle.radius;
+
+            float distance = pos1.dst(pos2);
+
+            if (distance <= radius1 + radius2) {
+                return Response.bounce;
+            }
+            return Response.cross;
+        }
+        return Response.bounce;
+    };
+
     private final GravityHandler gravityHandler;
-    private float gravity, damping = 0.15f;
+     */
+
+    private float radius;
     private Color color = Color.WHITE;
 
-    public Ball(int x, int y, float radius, float gravity, World<Object_> world, Vector2 velocity) {
+    public Ball(float x, float y, float radius, World world, Vector2 velocity) {
         super(world);
-        this.circle = new Circle(x, y, radius);
-        this.gravity = gravity;
-        this.world = world;
-        this.gravityHandler = new GravityHandler(world, gravity, damping);
-        this.velocity.set(velocity);
+        this.radius = radius;
 
-        // Create a jBump item for the ball
-        world.add(this.item, circle.x - circle.radius, circle.y - circle.radius, circle.radius * 2, circle.radius * 2);
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.DynamicBody;
+        bodyDef.linearVelocity.set(velocity);
+        bodyDef.linearDamping = 0;
+        bodyDef.position.set(x, y);
+
+        body = world.createBody(bodyDef);
+
+        body.setUserData(this);
+
+        CircleShape circleShape = new CircleShape();
+        circleShape.setRadius(radius);
+
+        // Define the fixture
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = circleShape;
+        fixtureDef.density = 100;
+        fixtureDef.friction = 0.3f;
+        fixtureDef.restitution = 1f; // Bounciness
+        fixtureDef.isSensor = false; // Ensure collisions occur
+
+        body.createFixture(fixtureDef);
+        circleShape.dispose();
     }
 
-    public Ball(int x, int y, float radius, float gravity, World<Object_> world) {
-        this(x, y, radius, gravity, world, Vector2.Zero);
+    public Ball(int x, int y, float radius, World world) {
+        this(x, y, radius, world, Vector2.Zero);
     }
 
     @Override
@@ -44,12 +82,12 @@ public class Ball extends Object_ {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(color);
-        shapeRenderer.circle(circle.x, circle.y, circle.radius);
+        shapeRenderer.circle(getX(), getY(), radius);
         shapeRenderer.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.circle(circle.x, circle.y, circle.radius);
+        shapeRenderer.circle(getX(),getY(), radius);
         shapeRenderer.end();
 
         // Render the velocity arrow
@@ -63,19 +101,19 @@ public class Ball extends Object_ {
         shapeRenderer.setColor(Color.RED);
 
         // Ball center
-        float centerX = circle.x;
-        float centerY = circle.y;
+        float centerX = getX();
+        float centerY = getY();
 
         // Arrow endpoint (velocity scaled for visibility)
         float arrowScale = 20f;
-        float endX = centerX + velocity.x * arrowScale;
-        float endY = centerY + velocity.y * arrowScale;
+        float endX = centerX + getVelocity().x * arrowScale;
+        float endY = centerY + getVelocity().y * arrowScale;
 
         // Draw the arrow line
         shapeRenderer.line(centerX, centerY, endX, endY);
 
         // Draw the arrowhead
-        Vector2 direction = new Vector2(velocity).nor(); // Normalize for arrowhead direction
+        Vector2 direction = new Vector2(getVelocity()).nor(); // Normalize for arrowhead direction
         float arrowheadSize = 5f; // Size of the arrowhead
         float arrowLeftX = endX - direction.x * arrowheadSize - direction.y * arrowheadSize;
         float arrowLeftY = endY - direction.y * arrowheadSize + direction.x * arrowheadSize;
@@ -89,77 +127,74 @@ public class Ball extends Object_ {
         shapeRenderer.end();
     }
 
-    public void syncPosition() {
-        float itemX = world.getRect(item).x;
-        float itemY = world.getRect(item).y;
-        circle.setPosition(itemX + circle.radius, itemY + circle.radius);
-    }
 
     @Override
     public void update(float delta) {
+        setCollisionDamping(GameConstants.main.parametersVisUI.getParameterWindow().collisionDamping.getValue());
+        setColor(GameConstants.main.parametersVisUI.getParameterWindow().color);
+        setRadius(GameConstants.main.parametersVisUI.getParameterWindow().radius.getValue() * 10);
+        setAirFriction(GameConstants.main.parametersVisUI.getParameterWindow().airFriction.getValue());
+
         if(Gdx.input.isTouched()) {
             Vector2 touchPos = new Vector2(Gdx.input.getX(), Gdx.input.getY());
             GameConstants.viewport.unproject(touchPos);
-            if(circle.contains(touchPos)) {
-                velocity.add(4, -4);
+            for (Fixture fixture : body.getFixtureList()) {
+                if(fixture.testPoint(touchPos)) {
+                    body.applyLinearImpulse(Vector2.Zero.setToRandomDirection().scl(body.getGravityScale() * body.getMass() * 2.5f), body.getPosition() ,false);
+                }
             }
         }
 
-        gravityHandler.applyGravityAndMove(item, velocity, delta, collisionFilter);
-
-        // Sync the circle's position with the item's position
-        syncPosition();
-        clampToBounds();
+       // clampToBounds();
     }
 
     @Override
     public float getX() {
-        return circle.x;
+        return body.getPosition().x;
     }
 
     @Override
     public float getY() {
-        return circle.y;
+        return body.getPosition().y;
     }
 
     public void clampToBounds() {
         float worldWidth = GameConstants.viewport.getWorldWidth();
         float worldHeight = GameConstants.viewport.getWorldHeight();
 
-        circle.x = Math.max(circle.radius, Math.min(circle.x, worldWidth - circle.radius));
-        circle.y = Math.max(circle.radius, Math.min(circle.y, worldHeight - circle.radius));
+        body.getPosition().x = Math.max(radius, Math.min(getX(), worldWidth - radius));
+        body.getPosition().y = Math.max(radius, Math.min(getY(), worldHeight - radius));
     }
 
-    public void dispose() {
+    public void dispose() {}
+
+    public float getCollisionDamping() {
+        return body.getAngularDamping();
     }
 
-    public float getGravity() {
-        return gravity;
+    public void setCollisionDamping(float collisionDamping) {
+        for (Fixture fixture : body.getFixtureList()) {
+            fixture.setRestitution(collisionDamping); // Updates the restitution (bounciness)
+        }
     }
 
-    public void setGravity(float gravity) {
-        this.gravity = gravity;
-        gravityHandler.setGravity(gravity);
-    }
-
-    public float getDamping() {
-        return damping;
-    }
-
-    public void setDamping(float damping) {
-        this.damping = damping;
-        gravityHandler.setDamping(damping);
+    public void setAirFriction(float airFriction) {
+        body.setLinearDamping(airFriction);
     }
 
     public Vector2 getVelocity() {
-        return velocity;
+        return body.getLinearVelocity();
     }
 
     public void setColor(Color color) {
         this.color = color;
     }
+
     public void setRadius(float radius) {
-        this.circle.radius = radius;
-        world.update(item, circle.x - circle.radius, circle.y - circle.radius, circle.radius * 2, circle.radius * 2);
+        this.radius = radius;
+        for (Fixture fixture : body.getFixtureList().iterator()) {
+            CircleShape circleShape = (CircleShape) fixture.getShape();
+            circleShape.setRadius(radius);
+        }
     }
 }

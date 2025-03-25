@@ -1,10 +1,10 @@
 package com.cop;
 
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.cop.objects.Object_;
-import com.dongbat.jbump.World;
 
 public class GameConstants {
-    public static World<Object_> world;
+    public static World world;
     public static FitViewport viewport;
+    public static ConceptOfPhysicsMain main = null;
 }

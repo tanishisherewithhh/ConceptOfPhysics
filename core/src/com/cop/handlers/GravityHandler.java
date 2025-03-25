@@ -1,20 +1,20 @@
 package com.cop.handlers;
 
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.cop.objects.Object_;
-import com.dongbat.jbump.*;
 
 public class GravityHandler {
-    private final World<Object_> world;
+   /* private final World world;
     private float gravity;
-    private float damping;
+    private float collisionDamping;
     private final float velocityEpsilon; // Threshold velocity after which velocity will be 0
 
-    public GravityHandler(World<Object_> world, float gravity, float damping) {
+    public GravityHandler(World<Object_> world, float gravity, float collisionDamping) {
         this.world = world;
         this.gravity = gravity;
-        this.damping = damping;
-        this.velocityEpsilon = 0.01f;
+        this.collisionDamping = collisionDamping;
+        this.velocityEpsilon = MathUtils.FLOAT_ROUNDING_ERROR;
     }
 
     public void applyGravityAndMove(Item<Object_> item, Vector2 velocity, float delta, CollisionFilter collisionFilter) {
@@ -35,7 +35,7 @@ public class GravityHandler {
     }
 
     private void handleCollisions(Collision collision, Vector2 velocity) {
-        float dampingFactor = Math.max(damping, 1 - Math.abs(collision.normal.y * 0.2f));
+        float dampingFactor = Math.max(collisionDamping, 1 - Math.abs(collision.normal.y * 0.2f));
 
         // Get the collision normal
         Vector2 normal = new Vector2(collision.normal.x, collision.normal.y);
@@ -54,10 +54,12 @@ public class GravityHandler {
     }
 
 
-    public void setDamping(float damping) {
-        this.damping = damping;
+    public void setCollisionDamping(float collisionDamping) {
+        this.collisionDamping = collisionDamping;
     }
     public void setGravity(float gravity) {
         this.gravity = gravity;
     }
+
+    */
 }
