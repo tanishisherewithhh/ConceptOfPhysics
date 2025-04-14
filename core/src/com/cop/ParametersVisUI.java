@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.cop.objects.Ball;
 import com.cop.objects.Object_;
 import com.kotcrab.vis.ui.VisUI;
@@ -17,15 +18,17 @@ import com.kotcrab.vis.ui.widget.*;
 import com.kotcrab.vis.ui.widget.color.ColorPicker;
 import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
 
+import static com.cop.GameConstants.viewport;
 import static com.cop.GameConstants.world;
 
-public class ParametersVisUI extends ApplicationAdapter{
-    private MenuBar menuBar;
-    private Stage stage;
+public class ParametersVisUI extends ApplicationAdapter {
     ParameterWindow parameterWindow;
     ConceptOfPhysicsMain main;
+    private MenuBar menuBar;
+    private Stage stage;
+    private FitViewport fitViewport;
 
-    public ParametersVisUI(ConceptOfPhysicsMain main){
+    public ParametersVisUI(ConceptOfPhysicsMain main) {
         this.main = main;
     }
 
@@ -34,7 +37,9 @@ public class ParametersVisUI extends ApplicationAdapter{
         VisUI.setSkipGdxVersionCheck(true);
         VisUI.load(VisUI.SkinScale.X1);
 
-        stage = new Stage(GameConstants.viewport);
+        //New viewport
+        fitViewport = new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        stage = new Stage(fitViewport);
         Gdx.input.setInputProcessor(stage);
 
         Table root = new Table();
@@ -54,7 +59,7 @@ public class ParametersVisUI extends ApplicationAdapter{
 
         options.addItem(new MenuItem("ParameterWindow", new ChangeListener() {
             @Override
-            public void changed (ChangeEvent event, Actor actor) {
+            public void changed(ChangeEvent event, Actor actor) {
                 stage.addActor(parameterWindow);
             }
         }));
@@ -63,13 +68,13 @@ public class ParametersVisUI extends ApplicationAdapter{
             public void changed(ChangeEvent event, Actor actor) {
                 Vector2 random = Vector2.Zero.setToRandomDirection();
                 random.scl(5);
-                main.objects.add(new Ball(GameConstants.viewport.getWorldWidth()/2, GameConstants.viewport.getWorldHeight()/2, 20f, world, random));
+                main.objects.add(new Ball(GameConstants.viewport.getWorldWidth() / 2, GameConstants.viewport.getWorldHeight() / 2, 20f, world, random));
             }
         }));
-        options.addItem(new MenuItem("Remove last Ball", new ChangeListener() {
+        options.addItem(new MenuItem("Remove last object", new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                if(!main.objects.isEmpty()) {
+                if (!main.objects.isEmpty()) {
                     Object_ obj = main.objects.removeLast();
                     world.destroyBody(obj.getBody());
                 }
@@ -87,22 +92,30 @@ public class ParametersVisUI extends ApplicationAdapter{
 
     @Override
     public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
+        fitViewport.update(width,height,true);
+        fitViewport.setWorldSize(width,height);
     }
 
+
     @Override
-    public void render () {
+    public void render() {
+        stage.getViewport().apply();
         stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         stage.draw();
     }
 
     @Override
-    public void dispose () {
+    public void dispose() {
         VisUI.dispose();
         stage.dispose();
     }
 
-    public static class ParameterWindow extends VisWindow{
+
+    public ParameterWindow getParameterWindow() {
+        return parameterWindow;
+    }
+
+    public static class ParameterWindow extends VisWindow {
         public VisSlider gravity = new VisSlider(0, 10, 0.01f, false);
         public VisSlider collisionDamping = new VisSlider(0, 1, 0.001f, false);
         public VisSlider airFriction = new VisSlider(0, 0.5f, 0.01f, false);
@@ -128,7 +141,7 @@ public class ParametersVisUI extends ApplicationAdapter{
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
                     world.setGravity(new Vector2(0, -gravity.getValue()));
-                    String s = String.format("%.2f",gravity.getValue());
+                    String s = String.format("%.2f", gravity.getValue());
                     gravityValueLabel.setText(s);
                 }
             });
@@ -140,7 +153,7 @@ public class ParametersVisUI extends ApplicationAdapter{
             collisionDamping.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    String s = String.format("%.3f",collisionDamping.getValue());
+                    String s = String.format("%.3f", collisionDamping.getValue());
                     dampingValueLabel.setText(s);
                 }
             });
@@ -153,7 +166,7 @@ public class ParametersVisUI extends ApplicationAdapter{
             airFriction.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    String s = String.format("%.2f",airFriction.getValue());
+                    String s = String.format("%.2f", airFriction.getValue());
                     airFrictionValueLabel.setText(s);
                 }
             });
@@ -165,7 +178,7 @@ public class ParametersVisUI extends ApplicationAdapter{
             radius.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    String s = String.format("%.1f",radius.getValue());
+                    String s = String.format("%.1f", radius.getValue());
                     radiusValueLabel.setText(s);
                 }
             });
@@ -202,7 +215,7 @@ public class ParametersVisUI extends ApplicationAdapter{
             final ColorPicker picker = new ColorPicker("Ball Color", new ColorPickerAdapter() {
                 @Override
                 public void finished(Color newColor) {
-                    if(newColor == null) return;
+                    if (newColor == null) return;
                     color = newColor;
                 }
             });
@@ -226,10 +239,6 @@ public class ParametersVisUI extends ApplicationAdapter{
             pack();
             centerWindow();
         }
-    }
-
-    public ParameterWindow getParameterWindow() {
-        return parameterWindow;
     }
 }
 

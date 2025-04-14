@@ -4,13 +4,17 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.cop.objects.Object_;
+import com.cop.objects.Platform;
 import com.cop.objects.ScreenObject_;
+import com.cop.objects.Wheel;
 
 import java.util.LinkedList;
 
@@ -18,24 +22,29 @@ import static com.cop.GameConstants.viewport;
 import static com.cop.GameConstants.world;
 
 public class ConceptOfPhysicsMain extends ApplicationAdapter {
+    public ParametersVisUI parametersVisUI;
+    float accumulator;
     ShapeRenderer shapeRenderer;
     SpriteBatch spriteBatch;
     LinkedList<Object_> objects = new LinkedList<>();
-    public ParametersVisUI parametersVisUI;
     Box2DDebugRenderer debugRenderer;
 
     @Override
     public void create() {
         GameConstants.main = this;
-        world = new World(new Vector2(0,-10f),false);
+        world = new World(new Vector2(0, -10f), false);
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        viewport = new FitViewport(ScreenUtils.getFrameBufferTexture().getRegionWidth(), ScreenUtils.getFrameBufferTexture().getRegionHeight());
-        updateScreenEdges(ScreenUtils.getFrameBufferTexture().getRegionWidth(), ScreenUtils.getFrameBufferTexture().getRegionHeight());
+        viewport = new FitViewport(Gdx.graphics.getWidth()/GameConstants.GAME_SCALE, Gdx.graphics.getHeight()/GameConstants.GAME_SCALE);
+        updateScreenEdges(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         parametersVisUI = new ParametersVisUI(this);
         parametersVisUI.create();
-        debugRenderer = new Box2DDebugRenderer();
+        debugRenderer = new Box2DDebugRenderer(true,true,true,false,false,true);
+
+
+        objects.add(new Platform(world, 1.0f, 0.6f, 300, 200, 60, 20));
+        objects.add(new Wheel(world));
     }
 
     @Override
@@ -54,13 +63,24 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
         parametersVisUI.render();
 
         debugRenderer.render(world, viewport.getCamera().combined);
-        world.step(1/30f,120,60);
+
+        update(Gdx.graphics.getDeltaTime());
+
+        world.clearForces();
+    }
+
+    public void update(float delta) {
+        accumulator += delta;
+        while (accumulator >= GameConstants.STEP) {
+            world.step(GameConstants.STEP, GameConstants.VELOCITY_ITERATIONS, GameConstants.POSITION_ITERATIONS);
+            accumulator -= GameConstants.STEP;
+        }
     }
 
     @Override
     public void resize(int screenWidth, int screenHeight) {
         viewport.update(screenWidth, screenHeight, true);
-        viewport.setWorldSize(screenWidth, screenHeight);
+        viewport.setWorldSize(screenWidth/GameConstants.GAME_SCALE, screenHeight/GameConstants.GAME_SCALE);
         objects.forEach(obj -> obj.onResize(screenWidth, screenHeight));
         ScreenObject_.updateEdges(screenWidth, screenHeight);
 
@@ -84,4 +104,5 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
     private void updateScreenEdges(int screenWidth, int screenHeight) {
         ScreenObject_.initEdges(screenWidth, screenHeight);
     }
+
 }

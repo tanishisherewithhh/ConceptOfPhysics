@@ -10,38 +10,8 @@ import com.cop.GameConstants;
 
 public class Ball extends Object_ {
     public static boolean showVelocityArrow = false;
-    /*
-    private final Circle circle;
-    private final Vector2 velocity = new Vector2();
-    private final CollisionFilter collisionFilter = (item, other) -> {
-        // Ensure both objects are circular
-        if (item.userData instanceof Ball && other.userData instanceof Ball) {
-            Ball ball1 = (Ball) item.userData;
-            Ball ball2 = (Ball) other.userData;
-
-            // Positions of the two balls
-            Vector2 pos1 = new Vector2(ball1.getX() + ball1.circle.radius, ball1.getY());
-            Vector2 pos2 = new Vector2(ball2.getX(), ball2.getY());
-
-            // Radii of the balls
-            float radius1 = ball1.circle.radius;
-            float radius2 = ball2.circle.radius;
-
-            float distance = pos1.dst(pos2);
-
-            if (distance <= radius1 + radius2) {
-                return Response.bounce;
-            }
-            return Response.cross;
-        }
-        return Response.bounce;
-    };
-
-    private final GravityHandler gravityHandler;
-     */
-
-    private float radius;
-    private Color color = Color.WHITE;
+    protected float radius;
+    protected Color color = Color.WHITE;
 
     public Ball(float x, float y, float radius, World world, Vector2 velocity) {
         super(world);
@@ -50,7 +20,6 @@ public class Ball extends Object_ {
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         bodyDef.linearVelocity.set(velocity);
-        bodyDef.linearDamping = 0;
         bodyDef.position.set(x, y);
 
         body = world.createBody(bodyDef);
@@ -63,9 +32,9 @@ public class Ball extends Object_ {
         // Define the fixture
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShape;
-        fixtureDef.density = 100;
-        fixtureDef.friction = 0.3f;
-        fixtureDef.restitution = 1f; // Bounciness
+        fixtureDef.density = 1;
+        fixtureDef.friction = 3;
+        fixtureDef.restitution = 0.1f; // Bounciness
         fixtureDef.isSensor = false; // Ensure collisions occur
 
         body.createFixture(fixtureDef);
@@ -78,7 +47,7 @@ public class Ball extends Object_ {
 
     @Override
     public void render(ShapeRenderer shapeRenderer, SpriteBatch batch) {
-        if(color == null) color = Color.WHITE;
+        if (color == null) color = Color.WHITE;
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(color);
@@ -87,11 +56,11 @@ public class Ball extends Object_ {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.circle(getX(),getY(), radius);
+        shapeRenderer.circle(getX(), getY(), radius);
         shapeRenderer.end();
 
         // Render the velocity arrow
-        if(showVelocityArrow) renderVelocityArrow(shapeRenderer);
+        if (showVelocityArrow) renderVelocityArrow(shapeRenderer);
     }
 
     private void renderVelocityArrow(ShapeRenderer shapeRenderer) {
@@ -135,27 +104,17 @@ public class Ball extends Object_ {
         setRadius(GameConstants.main.parametersVisUI.getParameterWindow().radius.getValue() * 10);
         setAirFriction(GameConstants.main.parametersVisUI.getParameterWindow().airFriction.getValue());
 
-        if(Gdx.input.isTouched()) {
+        if (Gdx.input.isTouched()) {
             Vector2 touchPos = new Vector2(Gdx.input.getX(), Gdx.input.getY());
             GameConstants.viewport.unproject(touchPos);
             for (Fixture fixture : body.getFixtureList()) {
-                if(fixture.testPoint(touchPos)) {
-                    body.applyLinearImpulse(Vector2.Zero.setToRandomDirection().scl(body.getGravityScale() * body.getMass() * 2.5f), body.getPosition() ,false);
+                if (fixture.testPoint(touchPos)) {
+                    body.applyLinearImpulse(Vector2.Zero.setToRandomDirection().scl(body.getGravityScale() * body.getMass() * 2.5f), body.getPosition(), false);
                 }
             }
         }
 
-       // clampToBounds();
-    }
-
-    @Override
-    public float getX() {
-        return body.getPosition().x;
-    }
-
-    @Override
-    public float getY() {
-        return body.getPosition().y;
+        clampToBounds();
     }
 
     public void clampToBounds() {
@@ -166,7 +125,8 @@ public class Ball extends Object_ {
         body.getPosition().y = Math.max(radius, Math.min(getY(), worldHeight - radius));
     }
 
-    public void dispose() {}
+    public void dispose() {
+    }
 
     public float getCollisionDamping() {
         return body.getAngularDamping();
