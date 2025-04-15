@@ -10,7 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.cop.objects.Ball;
+import com.cop.objects.CircleObj;
 import com.cop.objects.Object_;
 import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.util.TableUtils;
@@ -18,7 +18,6 @@ import com.kotcrab.vis.ui.widget.*;
 import com.kotcrab.vis.ui.widget.color.ColorPicker;
 import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
 
-import static com.cop.GameConstants.viewport;
 import static com.cop.GameConstants.world;
 
 public class ParametersVisUI extends ApplicationAdapter {
@@ -63,12 +62,12 @@ public class ParametersVisUI extends ApplicationAdapter {
                 stage.addActor(parameterWindow);
             }
         }));
-        options.addItem(new MenuItem("Add Ball", new ChangeListener() {
+        options.addItem(new MenuItem("Add CircleObj", new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 Vector2 random = Vector2.Zero.setToRandomDirection();
                 random.scl(5);
-                main.objects.add(new Ball(GameConstants.viewport.getWorldWidth() / 2, GameConstants.viewport.getWorldHeight() / 2, 20f, world, random));
+                main.objects.add(new CircleObj(GameConstants.viewport.getWorldWidth() / 2, GameConstants.viewport.getWorldHeight() / 2, 0.5f, world, random));
             }
         }));
         options.addItem(new MenuItem("Remove last object", new ChangeListener() {
@@ -83,7 +82,7 @@ public class ParametersVisUI extends ApplicationAdapter {
         options.addItem(new MenuItem("Show Velocity Arrow", new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                Ball.showVelocityArrow = !Ball.showVelocityArrow;
+                CircleObj.showVelocityArrow = !CircleObj.showVelocityArrow;
             }
         }));
 
@@ -92,10 +91,9 @@ public class ParametersVisUI extends ApplicationAdapter {
 
     @Override
     public void resize(int width, int height) {
-        fitViewport.update(width,height,true);
         fitViewport.setWorldSize(width,height);
+        fitViewport.update(width,height,true);
     }
-
 
     @Override
     public void render() {
@@ -111,6 +109,21 @@ public class ParametersVisUI extends ApplicationAdapter {
     }
 
 
+    public static float getRadius(){
+        return GameConstants.main.parametersVisUI.parameterWindow.radius.getValue();
+    }
+    public static float getCollisionDamping(){
+        return GameConstants.main.parametersVisUI.parameterWindow.collisionDamping.getValue();
+    }
+    public static float getGravity(){
+        return GameConstants.main.parametersVisUI.parameterWindow.gravity.getValue();
+    }
+    public static float getAirFriction(){
+        return GameConstants.main.parametersVisUI.parameterWindow.airFriction.getValue();
+    }
+    public static Color getColor(){
+        return GameConstants.main.parametersVisUI.parameterWindow.color;
+    }
     public ParameterWindow getParameterWindow() {
         return parameterWindow;
     }
@@ -212,7 +225,7 @@ public class ParametersVisUI extends ApplicationAdapter {
             radiusRow.add(radiusValueLabel).width(50f);
             sliderTable.add(radiusRow).row();
 
-            final ColorPicker picker = new ColorPicker("Ball Color", new ColorPickerAdapter() {
+            final ColorPicker picker = new ColorPicker("CircleObj Color", new ColorPickerAdapter() {
                 @Override
                 public void finished(Color newColor) {
                     if (newColor == null) return;

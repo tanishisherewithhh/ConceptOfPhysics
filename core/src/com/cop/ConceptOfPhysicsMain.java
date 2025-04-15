@@ -4,9 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -36,14 +34,13 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         viewport = new FitViewport(Gdx.graphics.getWidth()/GameConstants.GAME_SCALE, Gdx.graphics.getHeight()/GameConstants.GAME_SCALE);
-        updateScreenEdges(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-
+        updateScreenEdges((int) (Gdx.graphics.getWidth()/GameConstants.GAME_SCALE), (int) (Gdx.graphics.getHeight()/GameConstants.GAME_SCALE));
         parametersVisUI = new ParametersVisUI(this);
         parametersVisUI.create();
         debugRenderer = new Box2DDebugRenderer(true,true,true,false,false,true);
 
 
-        objects.add(new Platform(world, 1.0f, 0.6f, 300, 200, 60, 20));
+        objects.add(new Platform(world, 1.0f, 0.6f, 300/GameConstants.GAME_SCALE, 200/GameConstants.GAME_SCALE, 10, 5));
         objects.add(new Wheel(world));
     }
 
@@ -79,12 +76,11 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
 
     @Override
     public void resize(int screenWidth, int screenHeight) {
-        viewport.update(screenWidth, screenHeight, true);
-        viewport.setWorldSize(screenWidth/GameConstants.GAME_SCALE, screenHeight/GameConstants.GAME_SCALE);
-        objects.forEach(obj -> obj.onResize(screenWidth, screenHeight));
-        ScreenObject_.updateEdges(screenWidth, screenHeight);
-
+        ScreenObject_.updateEdges(screenWidth/GameConstants.GAME_SCALE, screenHeight/GameConstants.GAME_SCALE);
         parametersVisUI.resize(screenWidth, screenHeight);
+        viewport.setWorldSize(screenWidth / GameConstants.GAME_SCALE, screenHeight / GameConstants.GAME_SCALE);
+        viewport.update(screenWidth, screenHeight, true);
+        objects.forEach(obj -> obj.onResize(screenWidth, screenHeight));
     }
 
     @Override
@@ -104,5 +100,4 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
     private void updateScreenEdges(int screenWidth, int screenHeight) {
         ScreenObject_.initEdges(screenWidth, screenHeight);
     }
-
 }

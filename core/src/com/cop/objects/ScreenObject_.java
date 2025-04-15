@@ -95,14 +95,4 @@ public class ScreenObject_ extends Object_ {
     @Override
     public void dispose() {
     }
-
-    @Override
-    public float getX() {
-        return body.getPosition().x;
-    }
-
-    @Override
-    public float getY() {
-        return body.getPosition().y;
-    }
 }
