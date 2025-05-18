@@ -9,10 +9,7 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.cop.objects.Object_;
-import com.cop.objects.Platform;
-import com.cop.objects.ScreenObject_;
-import com.cop.objects.Wheel;
+import com.cop.objects.*;
 
 import java.util.LinkedList;
 
@@ -37,10 +34,11 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
         updateScreenEdges((int) (Gdx.graphics.getWidth()/GameConstants.GAME_SCALE), (int) (Gdx.graphics.getHeight()/GameConstants.GAME_SCALE));
         parametersVisUI = new ParametersVisUI(this);
         parametersVisUI.create();
-        debugRenderer = new Box2DDebugRenderer(true,true,true,false,false,true);
+        debugRenderer = new Box2DDebugRenderer(false,false,false,false,false,true);
 
 
         objects.add(new Platform(world, 1.0f, 0.6f, 300/GameConstants.GAME_SCALE, 200/GameConstants.GAME_SCALE, 10, 5));
+        objects.add(new UniformString(world, 150/GameConstants.GAME_SCALE, 250/GameConstants.GAME_SCALE, 100/GameConstants.GAME_SCALE, 5/GameConstants.GAME_SCALE,1,10,1.5e8f)); //Wool
         objects.add(new Wheel(world));
     }
 
@@ -62,8 +60,6 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
         debugRenderer.render(world, viewport.getCamera().combined);
 
         update(Gdx.graphics.getDeltaTime());
-
-        world.clearForces();
     }
 
     public void update(float delta) {
@@ -71,6 +67,8 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
         while (accumulator >= GameConstants.STEP) {
             world.step(GameConstants.STEP, GameConstants.VELOCITY_ITERATIONS, GameConstants.POSITION_ITERATIONS);
             accumulator -= GameConstants.STEP;
+            world.clearForces();
+
         }
     }
 
