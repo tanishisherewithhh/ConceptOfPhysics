@@ -60,22 +60,26 @@ public class Wheel extends CircleObj {
     @Override
     public void update(float delta) {
         super.update(delta);
+        lock();
 
     }
-    public void setMotorSpeed(float motorSpeed){
+
+    public void setMotorSpeed(float motorSpeed) {
         wheelJoint.setMotorSpeed(motorSpeed);
     }
-    public void setMotorSpeedRotPerS(float rotPerSecond){
+
+    public void setMotorSpeedRotPerS(float rotPerSecond) {
         wheelJoint.setMotorSpeed((float) (2 * Math.PI * rotPerSecond));
     }
-    public void setMotorTorque(int torque){
+
+    public void setMotorTorque(int torque) {
         wheelJoint.setMaxMotorTorque(torque);
     }
+
     /*
      function for hopefully locking the wheel
      */
-    public void lock(){
+    public void lock() {
         axleBody.setActive(false);
-        body.setActive(false);
     }
 }

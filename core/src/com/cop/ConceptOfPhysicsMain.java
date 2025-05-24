@@ -13,8 +13,7 @@ import com.cop.objects.*;
 
 import java.util.LinkedList;
 
-import static com.cop.GameConstants.viewport;
-import static com.cop.GameConstants.world;
+import static com.cop.GameConstants.*;
 
 public class ConceptOfPhysicsMain extends ApplicationAdapter {
     public ParametersVisUI parametersVisUI;
@@ -34,12 +33,16 @@ public class ConceptOfPhysicsMain extends ApplicationAdapter {
         updateScreenEdges((int) (Gdx.graphics.getWidth()/GameConstants.GAME_SCALE), (int) (Gdx.graphics.getHeight()/GameConstants.GAME_SCALE));
         parametersVisUI = new ParametersVisUI(this);
         parametersVisUI.create();
-        debugRenderer = new Box2DDebugRenderer(false,false,false,false,false,true);
+        debugRenderer = new Box2DDebugRenderer(true,true,true,false,false,true);
 
-
-        objects.add(new Platform(world, 1.0f, 0.6f, 300/GameConstants.GAME_SCALE, 200/GameConstants.GAME_SCALE, 10, 5));
-        objects.add(new UniformString(world, 150/GameConstants.GAME_SCALE, 250/GameConstants.GAME_SCALE, 100/GameConstants.GAME_SCALE, 5/GameConstants.GAME_SCALE,1,10,1.5e8f)); //Wool
-        objects.add(new Wheel(world));
+        Platform platform = new Platform(world, 1.0f, 0.6f, 300/GameConstants.GAME_SCALE, 200/GameConstants.GAME_SCALE, 10, 5); //Wool
+        Wheel wheel = new Wheel(world);
+        UniformString uf = new UniformString(world, 150/GameConstants.GAME_SCALE, 250/GameConstants.GAME_SCALE, 100/GameConstants.GAME_SCALE, 5/GameConstants.GAME_SCALE,1,10,1.5e8f).pinToPos(new Vector2(150/GameConstants.GAME_SCALE, 150/GameConstants.GAME_SCALE));
+        uf.attachBody(wheel.getBody());
+        
+        objects.add(platform);
+        objects.add(uf);
+        objects.add(wheel);
     }
 
     @Override

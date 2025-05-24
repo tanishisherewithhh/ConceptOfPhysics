@@ -33,7 +33,7 @@ public class CircleObj extends Object_ {
         // Define the fixture
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShape;
-        fixtureDef.density = 1;
+        fixtureDef.density = 10/(3.14f * radius * radius);
         fixtureDef.friction = 3;
         fixtureDef.restitution = 0.1f; // Bounciness
         fixtureDef.isSensor = false; // Ensure collisions occur
@@ -152,6 +152,7 @@ public class CircleObj extends Object_ {
         this.radius = radius/GameConstants.GAME_SCALE;
         for (Fixture fixture : body.getFixtureList().iterator()) {
             CircleShape circleShape = (CircleShape) fixture.getShape();
+            fixture.setDensity(10/(3.14f * radius * radius));
             circleShape.setRadius(this.radius);
         }
     }

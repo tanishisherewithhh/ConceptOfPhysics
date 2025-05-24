@@ -7,15 +7,24 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.joints.DistanceJoint;
 import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef;
+import com.badlogic.gdx.physics.box2d.joints.RopeJoint;
+import com.badlogic.gdx.physics.box2d.joints.RopeJointDef;
 import com.cop.GameConstants;
 
 public class UniformString extends Object_ {
-    private Body[] stringBodies;
-    private DistanceJoint[] stringJoints;
-    private float width, height, massPerLength;
-    private float breakingStress; //In newtons normally
-    private float crossSectionalArea = 0.0001f; // 1 cm² cross-section
-    private boolean highlightStress = true; // Toggle this as needed
+    private boolean isPinning = false;
+    private final Body[] stringBodies;
+    private final DistanceJoint[] stringJoints;
+    private final float width;
+    private final float height;
+    private final float massPerLength;
+    private final float breakingStress; //In newtons normally
+    private final float crossSectionalArea = 0.0001f; // 1 cm² cross-section
+    private final boolean highlightStress = true; // Toggle this as needed
+    private Body attachedBody = null;
+    private RopeJoint attachedBodyJoint = null;
+    private Vector2 pinTargetStart;
+    private Vector2 pinTargetEnd;
 
     public UniformString(World world, float x, float y, float width, float height, float massPerLength, int segmentCount, float breakingStress) {
         super(world);
@@ -53,6 +62,8 @@ public class UniformString extends Object_ {
             stringBodies[i] = body;
         }
 
+        body = stringBodies[0];
+
         // Connect bodies using distance joints
         for (int i = 1; i <= segmentCount; i++) {
             DistanceJointDef jointDef = new DistanceJointDef();
@@ -60,11 +71,21 @@ public class UniformString extends Object_ {
             jointDef.bodyB = stringBodies[i];
             jointDef.length = segmentWidth; // Maintain uniform spacing
             jointDef.collideConnected = false;
-            jointDef.frequencyHz = 0f;
+            jointDef.frequencyHz = 10;
             jointDef.dampingRatio = 0.7f;
 
             stringJoints[i - 1] = (DistanceJoint) world.createJoint(jointDef);
         }
+    }
+
+    public UniformString pinToPos() {
+        pinString(body.getPosition());
+        return this;
+    }
+
+    public UniformString pinToPos(Vector2 pinPos2) {
+        pinString(body.getPosition(), pinPos2);
+        return this;
     }
 
     @Override
@@ -72,22 +93,11 @@ public class UniformString extends Object_ {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
         for (int i = 0; i < stringBodies.length - 1; i++) {
+            Vector2 pos1 = stringBodies[i].getPosition();
             if (stringJoints[i] == null) {
-                // Check if joints before and after are also null
-                boolean isolated = i == stringJoints.length - 1 || stringJoints[i + 1] == null;
-
-                if (isolated) {
-                    Vector2 pos = stringBodies[i].getPosition();
-                    float size = 1.0f; // Define the rectangle size
-
-                    shapeRenderer.setColor(Color.LIGHT_GRAY); // Default color for isolated segments
-                    shapeRenderer.rect(pos.x - size, pos.y - size / 2, size, size);
-                }
-
+                shapeRenderer.rect(pos1.x, pos1.y, 1.0f, 1.0f);
                 continue;
             }
-
-            Vector2 pos1 = stringBodies[i].getPosition();
             Vector2 pos2 = stringBodies[i + 1].getPosition();
 
             // Default color (brown) if stress highlighting is off
@@ -107,7 +117,7 @@ public class UniformString extends Object_ {
             }
 
             // Use rectLine to render the segment
-           shapeRenderer.rectLine(pos1.x, pos1.y, pos2.x, pos2.y, 1.0f, color1, color2);
+            shapeRenderer.rectLine(pos1.x, pos1.y, pos2.x, pos2.y, 1.0f, color1, color2);
         }
 
         shapeRenderer.end();
@@ -118,10 +128,10 @@ public class UniformString extends Object_ {
     public void update(float delta) {
         for (int i = 0; i < stringJoints.length; i++) {
             DistanceJoint joint = stringJoints[i];
-            if (joint == null) continue;
+            if (joint == null || stringBodies[i] == null) continue;
 
             // Get the current reaction force from the joint
-            Vector2 reactionForce = joint.getReactionForce(1/GameConstants.STEP);
+            Vector2 reactionForce = joint.getReactionForce(1 / GameConstants.STEP);
             float forceMagnitude = reactionForce.len(); // Convert force vector to scalar magnitude
 
             float stress = forceMagnitude / crossSectionalArea;
@@ -133,25 +143,87 @@ public class UniformString extends Object_ {
                 System.out.println("Segment " + i + " broke due to accumulated fatigue! Amt:" + stress);
             }
         }
+        // Interpolate the pos
+        if (isPinning) {
+            boolean shouldStopPinning = false;
+            // Tune this for desired smoothness
+            float interpolationSpeed = 5;
+            if(pinTargetStart != null) {
+                Vector2 currentStart = stringBodies[0].getPosition();
+                Vector2 newStart = currentStart.lerp(pinTargetStart, interpolationSpeed * delta);
+                stringBodies[0].setTransform(newStart, stringBodies[0].getAngle());
+
+                if (currentStart.epsilonEquals(pinTargetStart, 4)) {
+                    stringBodies[0].setType(BodyDef.BodyType.StaticBody);
+                    stringBodies[0].setTransform(pinTargetStart, stringBodies[0].getAngle());
+                    System.out.println("Pinning start transition complete.");
+                    pinTargetStart = null;
+                    shouldStopPinning = true;
+                }
+            }
+
+            if(pinTargetEnd != null) {
+                Vector2 currentEnd = stringBodies[stringBodies.length - 1].getPosition();
+                Vector2 newEnd = currentEnd.lerp(pinTargetEnd, interpolationSpeed * delta);
+                stringBodies[stringBodies.length - 1].setTransform(newEnd, stringBodies[stringBodies.length - 1].getAngle());
+
+                if (currentEnd.epsilonEquals(pinTargetEnd, 4)) {
+                    stringBodies[stringBodies.length - 1].setType(BodyDef.BodyType.StaticBody);
+                    stringBodies[stringBodies.length - 1].setTransform(pinTargetEnd, stringBodies[stringBodies.length - 1].getAngle());
+                    System.out.println("Pinning end transition complete.");
+                    pinTargetEnd = null;
+                    shouldStopPinning = true;
+                } else {
+                    shouldStopPinning = false;
+                }
+            }
+            if(shouldStopPinning){
+                isPinning = false;
+            }
+        }
     }
 
-    // Catmull-Rom interpolation function
-    private float catmullRomSpline(float p0, float p1, float p2, float p3, float t) {
-        float t2 = t * t;
-        float t3 = t2 * t;
-        return 0.5f * (
-                (2 * p1) +
-                        (-p0 + p2) * t +
-                        (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
-                        (-p0 + 3 * p1 - 3 * p2 + p3) * t3
-        );
+    @Override
+    public Vector2 getPosition() {
+        return stringBodies[0].getPosition();
     }
 
+    public void attachBody(Body body) {
+        attachedBody = body;
+        Body lastString = stringBodies[stringBodies.length - 1];
+        if (attachedBodyJoint != null) {
+            world.destroyJoint(attachedBodyJoint);
+            attachedBodyJoint = null;
+        }
+        RopeJointDef jointDef = new RopeJointDef();
+        jointDef.bodyA = lastString;
+        jointDef.bodyB = attachedBody;
+        jointDef.maxLength = 0; // Prevent excessive stretching
+        jointDef.localAnchorA.set(0, 0);
+        jointDef.localAnchorB.set(0, 0);
+        jointDef.collideConnected = false;
+
+        attachedBodyJoint = (RopeJoint) world.createJoint(jointDef);
+        System.out.println("Body attached: " + body);
+    }
+
+    public void pinString(Vector2 pinPos) {
+        isPinning = true;
+        pinTargetStart = new Vector2(pinPos);
+        System.out.println("Pinned to: " + pinPos);
+    }
+    public void pinString(Vector2 pinPos1, Vector2 pinPos2) {
+        isPinning = true;
+        pinTargetStart = new Vector2(pinPos1);
+        pinTargetEnd = new Vector2(pinPos2);
+        System.out.println("Pinned start to: " + pinPos1);
+        System.out.println("Pinned end to: " + pinPos2);
+    }
 
     @Override
     public void dispose() {
         for (Body body : stringBodies) {
-            if(body == null) continue;
+            if (body == null) continue;
             world.destroyBody(body);
         }
     }
